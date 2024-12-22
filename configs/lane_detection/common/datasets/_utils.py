@@ -1,3 +1,3 @@
-CULANE_ROOT = '../../dataset/culane'
-TUSIMPLE_ROOT = '../../dataset/tusimple'
-LLAMAS_ROOT = '../../dataset/llamas'
+CULANE_ROOT = '/home/yang/project/autodrive/dataset/CULane'
+TUSIMPLE_ROOT = '/home/yang/project/autodrive/dataset/tusimple'
+LLAMAS_ROOT = '/home/yang/project/autodrive/dataset/llamas'
