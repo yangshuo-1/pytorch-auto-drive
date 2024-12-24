@@ -15,6 +15,7 @@ fi
 
 if [ "$2" = "test" ]; then
     # Perform test with official scripts
+    pwd
     ./eval.sh $1 $3
     # Calculate overall F1 score
     python cal_total.py --exp-name=$1 --save-dir=$3
