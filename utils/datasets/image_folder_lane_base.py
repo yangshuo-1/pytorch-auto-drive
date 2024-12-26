@@ -35,6 +35,7 @@ class ImageFolderLaneBase(torchvision.datasets.VisionDataset):
             img = self.transforms(img)
 
         # Process potential target
+        # 处理lable
         keypoint = None
         gt_keypoint = None
         if self.keypoints is not None:

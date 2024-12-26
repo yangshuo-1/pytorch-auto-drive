@@ -92,6 +92,7 @@ class LaneDetDir(LaneDetVisualizer):
     def get_loader(self, cfg):
         if 'vis_dataset' in cfg.keys():
             dataset_cfg = cfg['vis_dataset']
+            self.dataset_image_set = dataset_cfg['image_set']
         else:
             dataset_cfg = dict(
                 name='ImageFolderLaneDataset',
@@ -147,7 +148,13 @@ class LaneDetDir(LaneDetVisualizer):
                                                        keypoint_color=self._cfg['keypoint_color'],
                                                        std=None, mean=None, style=self._cfg['style'],
                                                        compare_gt_metric=self._cfg['metric'])
-            save_images(results, filenames=filenames)
+            # check的时候，如果gt无车道线，直接跳过 
+            if self.dataset_image_set == 'check' and len(gt_keypoints[0]) == 0:
+                continue
+            else:
+                save_images(results, filenames=filenames)
+            # save_images(results, filenames=filenames)
+            
 
 
 class LaneDetVideo(BaseVideoVisualizer, LaneDetVisualizer):

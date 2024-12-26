@@ -19,7 +19,14 @@ class CULaneVis(ImageFolderLaneBase):
             contents = [x.strip() for x in f.readlines()]
 
         # Load filenames
-        if image_set == 'test' or image_set == 'val':  # Test
+        if image_set == 'check':
+            self.images = [os.path.join(root_dataset, x) for x in contents]
+            if use_gt:
+                self.gt_keypoints = [os.path.join(root_dataset, x[:x.find('.jpg')] + '.lines.txt') for x in contents]
+            self.filenames = [x for x in contents]
+            if root_keypoint is not None:
+                self.keypoints = [os.path.join(root_keypoint, x[:x.find('.jpg')] + '.lines.txt') for x in contents]
+        elif image_set == 'test' or image_set == 'val':  # Test
             self.images = [os.path.join(root_dataset, x + '.jpg') for x in contents]
             if use_gt:
                 self.gt_keypoints = [os.path.join(root_dataset, x + '.lines.txt') for x in contents]
@@ -42,6 +49,6 @@ class CULaneVis(ImageFolderLaneBase):
 
     def _check(self):
         # Checks
-        if self.image_set not in ['train', 'val', 'test']:
+        if self.image_set not in ['train', 'val', 'test', 'check']:
             raise ValueError
         assert self.output_dir != self.root, 'Avoid overwriting your dataset!'
