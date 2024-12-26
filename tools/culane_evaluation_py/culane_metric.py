@@ -47,10 +47,10 @@ def continuous_cross_iou(xs, ys, width=30, img_shape=(590, 1640, 3)):
 
 
 def remove_consecutive_duplicates(x):
-    """Remove consecutive duplicates"""
+    """Remove consecutive duplicates 去重"""
     y = []
     for t in x:
-        if len(y) > 0 and y[-1] == t:
+        if len(y) > 0 and np.array_equal(y[-1], t):
             warnings.warn('Removed consecutive duplicate point ({}, {})!'.format(t[0], t[1]))
             continue
         y.append(t)
