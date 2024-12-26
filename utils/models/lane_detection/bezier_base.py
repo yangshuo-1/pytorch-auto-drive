@@ -19,6 +19,7 @@ class BezierBaseNet(torch.nn.Module):
         # control_points: L x N x 2
         H, W = resize_shape
         cps_of_lanes = []
+        # 根据是否存在保存控制点 
         for flag, cp in zip(existence, control_points):
             if flag:
                 cps_of_lanes.append(cp.tolist())
@@ -53,11 +54,12 @@ class BezierBaseNet(torch.nn.Module):
     @torch.no_grad()
     def inference(self, inputs, input_sizes, gap, ppl, dataset, max_lane=0, forward=True, return_cps=False, n=50):
         outputs = self.forward(inputs) if forward else inputs  # Support no forwarding inside this function
-        existence_conf = outputs['logits'].sigmoid()
+        existence_conf = outputs['logits'].sigmoid() # 存在车道线的置信度 
         existence = existence_conf > self.thresh
 
         # Test local maxima
         if self.local_maximum_window_size > 0:
+            # 利用最大池化检测局部最大值，消除误检测 
             _, max_indices = torch.nn.functional.max_pool1d(existence_conf.unsqueeze(1),
                                                             kernel_size=self.local_maximum_window_size, stride=1,
                                                             padding=(self.local_maximum_window_size - 1) // 2,
@@ -70,6 +72,8 @@ class BezierBaseNet(torch.nn.Module):
             existence *= local_maxima
 
         control_points = outputs['curves']
+
+        # 限制检测到的车道线数目 
         if max_lane != 0:  # Lane max number prior for testing
             existence, _ = lane_pruning(existence, existence_conf, max_lane=max_lane)
 
@@ -81,7 +85,7 @@ class BezierBaseNet(torch.nn.Module):
 
         existence = existence.cpu().numpy()
         control_points = control_points.cpu().numpy()
-        H, _ = input_sizes[1]
+        H, _ = input_sizes[1]  # 输入图像的H
         b = BezierCurve(order=3, num_sample_points=H if dataset == 'tusimple' else n)
 
         lane_coordinates = []

@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('--gt-keypoint-path', type=str,
                         help='Ground truth keypoint input path (expect json/txt file in CULane format, [x, y]),'
                              'if both mask & keypoint are None, inference will be performed')
+    # 各种后缀的配置 
     parser.add_argument('--image-suffix', type=str, default='.jpg',
                         help='Image file suffix')
     parser.add_argument('--keypoint-suffix', type=str, default='.lines.txt',
@@ -39,6 +40,7 @@ if __name__ == '__main__':
                         help='Ground truth keypoint file suffix')
     parser.add_argument('--mask-suffix', type=str, default='.png',
                         help='Segmentation mask file suffix')
+    
     parser.add_argument('--style', type=str, default='point',
                         help='Lane visualization style: point/line/bezier')
     parser.add_argument('--metric', type=str, default='culane',
@@ -51,7 +53,7 @@ if __name__ == '__main__':
                         help='Use a larger color pool for lane segmentation masks')
     parser.add_argument('--cfg-options', type=cmd_dict,
                         help='Override config options with \"x1=y1 x2=y2 xn=yn\"')
-
+    # 互斥参数组 
     group2 = parser.add_mutually_exclusive_group()
     group2.add_argument('--continue-from', type=str,
                         help='[Deprecated] Continue training from a previous checkpoint')
@@ -72,9 +74,11 @@ if __name__ == '__main__':
     cfg = read_config(args.config)
     args, cfg = parse_arg_cfg(args, cfg)
 
-    cfg_runner_key = 'vis' if 'vis' in cfg.keys() else 'test'
+    cfg_runner_key = 'vis' if 'vis' in cfg.keys() else 'test'           # 是否是vis模式
     for k in retain_args:
         cfg[cfg_runner_key][k] = vars(args)[k]
+
+    # bezier必须要预测 
     if not cfg[cfg_runner_key]['pred']:
         assert cfg[cfg_runner_key]['style'] != 'bezier', 'Must use --pred for style bezier!'
         cfg['model'] = None

@@ -48,6 +48,7 @@ class BezierLaneNet(BezierBaseNet):
             x = self.reducer(x)
 
         # Segmentation task
+        # 辅助的分割任务，推理时不用 
         if self.segmentation_head is not None:
             segmentations = self.segmentation_head(x)
         else:
@@ -67,8 +68,11 @@ class BezierLaneNet(BezierBaseNet):
         return {'logits': logits,
                 'curves': curves.permute(0, 2, 1).reshape(curves.shape[0], -1, curves.shape[-2] // 2, 2).contiguous(),
                 'segmentations': segmentations}
-
+    
+    # 评估模式 
     def eval(self, profiling=False):
+        # 将模型设置为评估模式 
         super().eval()
+        # 评估模式时关闭分割头 
         if profiling:
             self.segmentation_head = None

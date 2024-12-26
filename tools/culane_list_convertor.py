@@ -16,7 +16,7 @@ for i in range(len(old_file_names)):
     with open(file_name, 'r') as f:
         temp = f.readlines()
     for x in range(len(temp)):
-        if new_file_names[i] == 'test.txt' or new_file_names[i] == 'val.txt':
+        if new_file_names[i] == 'test.txt' or new_file_names[i] == 'val.txt':       # 删除拓展名
             temp[x] = temp[x].replace('.jpg', '')[1:]
         else:
             temp[x] = temp[x][1: temp[x].find('.jpg')] + temp[x][temp[x].find('.png') + 4:]

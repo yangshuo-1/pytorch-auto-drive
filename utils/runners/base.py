@@ -215,7 +215,7 @@ class BaseTester(BaseRunner):
         self._cfg = cfg['test']
         self.init_exp_dir(cfg, self.image_sets[self._cfg['state'] - 1])
         self.device = self.get_device_and_move_model()
-        self.load_checkpoint(self._cfg['checkpoint'])
+        self.load_checkpoint(self._cfg['checkpoint'])  # 加载checkpoint
 
         # Dataset
         transforms = TRANSFORMS.from_dict(cfg['test_augmentation'])
