@@ -81,3 +81,4 @@ class BezierLaneNet(BezierBaseNet):
         # 评估模式时关闭分割头 
         if profiling:
             self.segmentation_head = None
+        return self
