@@ -6,10 +6,11 @@ try:
     from utils.common import warnings
 except ImportError:
     import warnings
+from cbam import CBAM
 from ...builder import MODELS
 
 @MODELS.register()
-class FPN(nn.Module):
+class CBAFPN(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -27,7 +28,7 @@ class FPN(nn.Module):
                  init_cfg=dict(
                      type='Xavier', layer='Conv2d', distribution='uniform'),
                  cfg=None):
-        super(FPN, self).__init__()
+        super(CBAFPN, self).__init__()
         assert isinstance(in_channels, list)
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -36,6 +37,8 @@ class FPN(nn.Module):
         self.relu_before_extra_convs = relu_before_extra_convs
         self.no_norm_on_lateral = no_norm_on_lateral
         self.upsample_cfg = upsample_cfg.copy()
+
+        self.att = CBAM(out_channels)                    # 最高层的特征应用CBAM
 
         if end_level == -1:
             self.backbone_end_level = self.num_ins
@@ -117,16 +120,21 @@ class FPN(nn.Module):
             for _ in range(len(inputs) - len(self.in_channels)):
                 del inputs[0]
 
-        # 横向连接 
-        laterals = [
-            lateral_conv(inputs[i + self.start_level])
-            for i, lateral_conv in enumerate(self.lateral_convs)
-        ]
+        # 构造横向连接时，最高层特征应用CBAM
+        laterals = []
+        for i, lateral_conv in enumerate(self.lateral_convs):
+            if i == len(self.lateral_convs)-1:
+                fea = lateral_conv(inputs[i + self.start_level])    # 先卷积统一通道 
+                laterals.append(self.att(fea))                      # 应用CBAM
+            else:
+                laterals.append(lateral_conv(inputs[i + self.start_level]))
+
+
         # 高层特征上采样与横向连接进行融合，构建自顶向下路径 
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
-            #  it cannot co-exist with `size` in `F.interpolate`.
+            #  it cannot co-exist with `size` in `F.interpolate`.使用固定的缩放因子
             if 'scale_factor' in self.upsample_cfg:
                 laterals[i - 1] += F.interpolate(laterals[i],
                                                  **self.upsample_cfg)
@@ -169,14 +177,14 @@ class FPN(nn.Module):
             print(i, tensor_lists[i].shape)
 
 if __name__ == '__main__':
-    # test fpn
+    # test cbafpn
     l1 = torch.rand(2, 64, 72, 200)
     l2 = torch.rand(2, 128, 36, 100)
     l3 = torch.rand(2, 256, 18, 50)
     l4 = torch.rand(2, 512, 9, 25)
     inputs = [l1, l2, l3, l4]
 
-    net = FPN(
+    net = CBAFPN(
         in_channels=[64, 128, 256, 512],
         out_channels=256,
         num_outs=4
