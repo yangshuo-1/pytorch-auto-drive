@@ -10,11 +10,15 @@ from ..common import save_checkpoint
 from ..ddp_utils import reduce_dict, is_main_process
 from .lane_det_tester import LaneDetTester
 from .base import BaseTrainer, DATASETS, TRANSFORMS
-
+from ..logger import Logger
 
 class LaneDetTrainer(BaseTrainer):
     def __init__(self, cfg):
         super().__init__(cfg)
+
+        self.logging = Logger(self._cfg['exp_dir'])
+        self.logging.info('Start train: ' + self._cfg['exp_name'])
+        self.logging.info('Model: ' + str(self.model))
 
     def run(self):
         # Should be the same as segmentation, given customized loss classes
@@ -73,9 +77,13 @@ class LaneDetTrainer(BaseTrainer):
 
                 # Record losses
                 if current_step_num % loss_num_steps == (loss_num_steps - 1):
+                    # 打印日志信息 
+                    log_message = f"Epoch {epoch + 1}, Batch {i + 1}: "
+                    log_message += ", ".join([f"{k}: {v:.4f}" for k, v in log_dict.items()])
+                    self.logging.info(log_message)
                     for k in running_loss.keys():
-                        print('[%d, %d] %s: %.4f' % (epoch + 1, i + 1, k, running_loss[k] / loss_num_steps))
-                        # Logging only once
+                        # print('[%d, %d] %s: %.4f' % (epoch + 1, i + 1, k, running_loss[k] / loss_num_steps))
+                        # Logging only once 分布式训练中用到的
                         if is_main_process():
                             self.writer.add_scalar(k, running_loss[k] / loss_num_steps, current_step_num)
                         running_loss[k] = 0.0
@@ -110,7 +118,8 @@ class LaneDetTrainer(BaseTrainer):
                                             filename=os.path.join(self._cfg['exp_dir'], 'model.pt'))
 
             epoch += 1
-            print('Epoch time: %.2fs' % (time.time() - time_now))
+            self.logging.info('Epoch time: %.2fs' % (time.time() - time_now))
+            # print('Epoch time: %.2fs' % (time.time() - time_now))
 
         # For no-evaluation mode
         if not self._cfg['validation']:
@@ -118,6 +127,7 @@ class LaneDetTrainer(BaseTrainer):
                             optimizer=None,
                             lr_scheduler=None,
                             filename=os.path.join(self._cfg['exp_dir'], 'model.pt'))
+        self.logging.info('End train: ' + self._cfg['exp_name'])
 
     def get_validation_dataset(self, cfg):
         if not self._cfg['validation']:
