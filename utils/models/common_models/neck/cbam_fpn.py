@@ -6,7 +6,8 @@ try:
     from utils.common import warnings
 except ImportError:
     import warnings
-from cbam import CBAM
+# from cbam import CBAM
+from utils.models.common_models.module.cbam import CBAM
 from ...builder import MODELS
 
 @MODELS.register()
