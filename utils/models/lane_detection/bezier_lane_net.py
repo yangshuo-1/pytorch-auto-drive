@@ -64,10 +64,10 @@ class BezierLaneNet(BezierBaseNet):
             x = self.simple_flip_2d(x.float())                  # 4. 特征反转模块输出：[batch size, 256, 18, 50]
        
         
-        x = self.aggregator(x)[:, :, 0, :]                      # 5. avgpoll输出：[batch size, 256, 50]
+        x = self.aggregator(x)[:, :, 0, :]                      # 5. 结果：[batch size, 256, 50] aggregator输出[batch size, 1, 256, 50],高度方向上求平均值 
 
         x = self.regression_head(x)                             # 6. regression_head[batch size, 256, 50]
-        logits = self.proj_classification(x).squeeze(1)         # 7. classification输出 [batch size, 50]
+        logits = self.proj_classification(x).squeeze(1)         # 7. classification输出 [batch size, 50] 候选 
         curves = self.proj_regression(x)                        # 8. regression输出 [batch size, 8, 50]
 
         return {'logits': logits,

@@ -8,6 +8,7 @@ from ...builder import MODELS
 @MODELS.register()
 class ConvProjection_1D(torch.nn.Module):
     # Projection based on line features (1D convs)
+    # 参考了FCOS中的头部操作，两层对特征进行转换，存在类和参数回归共享
     def __init__(self, num_layers, in_channels, bias=True, k=3):
         # bias is set as True in FCOS
         super().__init__()

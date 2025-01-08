@@ -166,6 +166,9 @@ class BezierSampler(torch.nn.Module):
 
 @torch.no_grad()
 def get_valid_points(points):
+    """
+        筛选出points中在单位正方形[0,1]x[0,1]的点
+    """
     # ... x 2
     if points.numel() == 0:
         return torch.tensor([1], dtype=torch.bool, device=points.device)

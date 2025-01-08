@@ -63,14 +63,13 @@ class IntermediateLayerGetter(nn.ModuleDict):
         self.return_layers = orig_return_layers
 
     def forward(self, x):
+        # 保存return_layers包含的层的结果
         out = OrderedDict()
         for name, module in self.named_children():
             x = module(x)
             if name in self.return_layers:
                 out_name = self.return_layers[name]
                 out[out_name] = x
-        # if isinstance(out, dict):
-        #     out = out['out']
         return out
 
 
