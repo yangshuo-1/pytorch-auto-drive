@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from mmcv.cnn import ConvModule
+if torch.__version__ >= '1.6.0':
+    from torch.cuda.amp import autocast
+else:
+    from utils.torch_amp_dummy import autocast
 try:
     from utils.common import warnings
 except ImportError:
@@ -53,7 +57,8 @@ class FeatureAlign_V2(nn.Module):  # FaPN full version
         feat_arm = self.lateral_conv(feat_l)  # 0~1 * feats
         # 计算offset  这里只学习offset，回头试试加上mask
         offset = self.offset(torch.cat([feat_arm, feat_up * 2], dim=1))  # concat for offset by compute the dif 通道上拼接 
-        feat_align = self.relu(self.dcpack_L2(feat_up, offset))  # [feat, offset]
+        with autocast(False):
+            feat_align = self.relu(self.dcpack_L2(feat_up.float(), offset.float()))  # [feat, offset]
         return feat_align + feat_arm
 
 @MODELS.register()
