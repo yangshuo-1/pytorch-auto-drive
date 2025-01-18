@@ -6,7 +6,8 @@ from torch.nn.parameter import Parameter
 
 class ShuffleAttention(nn.Module):
     """
-        引入特征通道的随机重排shuffling来增强模型对不同特征通道的敏感度。提高模型的特征表示能力
+        引入特征通道的随机重排shuffling来增强模型对不同特征通道的敏感度, 提高模型的特征表示能力.
+        具体来说就是特征分组，然后对每组使用通道、空间注意力进行特征增强。
     """
     def __init__(self, channel=512, reduction=16, G=8):
         super().__init__()

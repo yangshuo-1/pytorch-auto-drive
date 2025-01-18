@@ -113,6 +113,7 @@ class HungarianBezierLoss(WeightedLoss):
         target_labels = torch.zeros_like(outputs['logits'])
         target_segmentations = torch.stack([target['segmentation_mask'] for target in targets])
 
+        # 需要统计这个batch是否存在车道线，culane可能不存在
         total_targets = 0
         for i in targets:
             total_targets += i['keypoints'].numel()
@@ -120,7 +121,7 @@ class HungarianBezierLoss(WeightedLoss):
         # CULane actually can produce a whole batch of no-lane images,
         # in which case, we just calculate the classification loss
         if total_targets > 0:
-            # Match
+            # Match 计算out的和target的匹配关系
             indices = self.matcher(outputs=outputs, targets=targets)
             idx = HungarianLoss.get_src_permutation_idx(indices)
             output_curves = output_curves[idx]
@@ -131,6 +132,7 @@ class HungarianBezierLoss(WeightedLoss):
             target_sample_points = torch.cat([t['sample_points'][i] for t, (_, i) in zip(targets, indices)], dim=0)
 
             # Valid bezier segments
+            # 根据target的关键点和采样点，计算对应的bezier曲线控制点以及其采样点 
             target_keypoints = cubic_bezier_curve_segment(target_keypoints, target_sample_points)
             target_sample_points = self.bezier_sampler.get_sample_points(target_keypoints)
 

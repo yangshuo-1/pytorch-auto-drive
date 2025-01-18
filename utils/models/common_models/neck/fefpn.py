@@ -9,6 +9,9 @@ from ...builder import MODELS
 
 @MODELS.register()
 class FEFPN(nn.Module):
+    """ 使用的标准NonLocal2d
+        https://arxiv.org/pdf/2312.17163
+    """
     def __init__(self,
                  in_channels,
                  out_channels,
