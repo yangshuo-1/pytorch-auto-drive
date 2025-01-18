@@ -23,7 +23,7 @@ class LaneDetTrainer(BaseTrainer):
     def run(self):
         # Should be the same as segmentation, given customized loss classes
         self.model.train()
-        epoch = 0
+        epoch = self.epoch
         running_loss = None  # Dict logging for every loss (too many losses in this task)
         loss_num_steps = int(len(self.dataloader) / 10) if len(self.dataloader) > 10 else 1
         if self._cfg['mixed_precision']:
@@ -31,6 +31,7 @@ class LaneDetTrainer(BaseTrainer):
 
         # Training
         best_validation = 0
+        latest_checkpoint_path = None
         while epoch < self._cfg['num_epochs']:
             self.model.train()
             if self._cfg['distributed']:
@@ -116,6 +117,20 @@ class LaneDetTrainer(BaseTrainer):
                                             optimizer=None,
                                             lr_scheduler=None,
                                             filename=os.path.join(self._cfg['exp_dir'], 'model.pt'))
+                            
+            # 保存checkpoint
+            if not self._cfg['seg'] and'save_step' in self._cfg:
+                if epoch % self._cfg['save_step'] == 0:
+                    new_checkpoint_path = os.path.join(self._cfg['exp_dir'], f'checkpoint_epoch_{epoch+1}.pt')
+                    save_checkpoint(net=self.model.module if self._cfg['distributed'] else self.model,
+                                        optimizer=self.optimizer,
+                                        lr_scheduler=self.lr_scheduler,
+                                        epoch=epoch+1,
+                                        filename=new_checkpoint_path)
+                    if latest_checkpoint_path is not None:
+                        os.remove(latest_checkpoint_path)
+                    self.logging.info('Save checkpoint {}, remove {}'.format(new_checkpoint_path, latest_checkpoint_path))
+                    latest_checkpoint_path = new_checkpoint_path
 
             epoch += 1
             self.logging.info('Epoch time: %.2fs' % (time.time() - time_now))

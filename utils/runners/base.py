@@ -6,6 +6,7 @@ import torch
 import cv2
 from torch.utils.tensorboard import SummaryWriter
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 
 try:
     import ujson as json
@@ -20,6 +21,10 @@ from ..optimizers import OPTIMIZERS
 from ..transforms import TRANSFORMS
 from ..ddp_utils import init_distributed_mode, is_main_process
 from ..common import load_checkpoint
+try:
+    from ..common import warnings
+except ImportError:
+    import warnings
 
 
 def get_collate_fn(name):
@@ -119,7 +124,6 @@ class BaseTrainer(BaseRunner):
             self._cfg['validation'] = self._cfg['val_num_steps'] > 0
         self.init_exp_dir(cfg, 'train')
         self.writer = self.get_writer()
-        self.load_checkpoint(self._cfg['checkpoint'])
 
         # Dataset
         self.collate_fn = get_collate_fn(self._cfg['collate_fn'])
@@ -151,6 +155,50 @@ class BaseTrainer(BaseRunner):
                                                     optimizer=self.optimizer,
                                                     len_loader=len(self.dataloader))
         self.criterion = LOSSES.from_dict(cfg['loss'])
+        self.epoch = 0
+        if self._cfg['resume']:
+            self.load_checkpoint(self._cfg['checkpoint'])
+            # print("out: ", self.model.state_dict()['segmentation_head.conv.bn.weight'])
+            # print(self.epoch)
+    
+    def load_checkpoint(self, ckpt_filename, strict=None):
+        if ckpt_filename is not None:
+            if not os.path.exists(ckpt_filename):
+                print(f"Checkpoint file {ckpt_filename} does not exist.")
+                return
+    
+            # Load model checkpoints (supports amp)
+            try:
+                checkpoint = torch.load(ckpt_filename, map_location='cpu')
+            except:
+                warnings.warn('Model not saved as on cpu, could be a legacy trained weight, trying loading on saved device...')
+                checkpoint = torch.load(ckpt_filename)
+                print('Loaded on saved device.')
+
+            # To keep BC while having a acceptable variable name for lane detection
+            checkpoint['model'] = OrderedDict((k.replace('aux_head', 'lane_classifier') if 'aux_head' in k else k, v)
+                                            for k, v in checkpoint['model'].items())
+            
+            self.model.load_state_dict(checkpoint['model'], strict=strict)
+
+            if self.optimizer is not None:
+                try:  # Shouldn't be necessary, but just in case
+                    self.optimizer.load_state_dict(checkpoint['optimizer'])
+                except RuntimeError:
+                    warnings.warn('Incorrect optimizer state dict, maybe you are using old code with aux_head?')
+                    pass
+            if self.lr_scheduler is not None:
+                try:  # Shouldn't be necessary, but just in case
+                    self.lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+                except RuntimeError:
+                    warnings.warn('Incorrect lr scheduler state dict, maybe you are using old code with aux_head?')
+                    pass
+            if self.epoch is not None:
+                try:  # Shouldn't be necessary, but just in case
+                    self.epoch = checkpoint['epoch']
+                except RuntimeError:
+                    warnings.warn('Incorrect lr scheduler state dict, maybe you are using old code with aux_head?')
+                    pass
 
     def get_device_and_move_model(self):
         init_distributed_mode(self._cfg)

@@ -21,11 +21,12 @@ warnings = get_warnings()
 
 
 # Save model checkpoints (supports amp)
-def save_checkpoint(net, optimizer, lr_scheduler, filename='temp.pt'):
+def save_checkpoint(net, optimizer, lr_scheduler, epoch=None, filename='temp.pt'):
     checkpoint = {
         'model': net.state_dict(),
         'optimizer': optimizer.state_dict() if optimizer is not None else None,
-        'lr_scheduler': lr_scheduler.state_dict() if lr_scheduler is not None else None
+        'lr_scheduler': lr_scheduler.state_dict() if lr_scheduler is not None else None,
+        'epoch': epoch if epoch is not None else None\
     }
     save_on_master(checkpoint, filename)
 
